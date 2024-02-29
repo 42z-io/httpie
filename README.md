@@ -1,4 +1,6 @@
-Useful and opinionated middleware, and helper functions for HTTP based applications.
+Opinionated middleware, and helper functions for HTTP based applications.
+
+Why httpie? So you can have your pie and eat it to...?
 
 
 # Middleware

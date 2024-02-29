@@ -1,3 +1,7 @@
+[![Build and Test](https://github.com/42z-io/httpie/actions/workflows/build_test.yml/badge.svg)] 
+[![Coverage Status](https://coveralls.io/repos/github/42z-io/httpie/badge.svg?branch=master)](https://coveralls.io/github/42z-io/httpie?branch=master)
+[![Docs](https://img.shields.io/badge/API-docs?label=docs&color=blue&link=https%3A%2F%2Fpkg.go.dev%2Fgithub.com%2F42z-io%2Fhttpie)](https://pkg.go.dev/github.com/42z-io/httpie)
+
 Opinionated middleware, and helper functions for HTTP based applications.
 
 Why httpie? So you can have your pie and eat it to...?

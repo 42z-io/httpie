@@ -56,10 +56,43 @@ middleware := httpie.LoggingMiddleware(slog.Default(), httpie.LoggingOpts{
   LogResponse: true,
   OnResponse: httpie.DefaultLogResponse,
   OnRequest: httpie.DefaultLogRequest,
+  SetupContext: nil,
 })
 ```
 
 You can customize the response and request logging by providing your own OnResponse and OnRequest handlers.
+
+### Context Setup
+
+You can setup the context before hand so that values are available to the log handlers. This shouldn't be needed very often but can let you access variables defined in the context later (for example an authentication middleware). Context values are not normally propagated upwards.
+
+You can use it like this:
+
+```go
+SetupContext: func(ctx context.Context) context.Context {
+  user := new(MyUserObj)
+  ctx = context.WithValue(ctx, MyUserCtxKey, user)
+  return ctx
+}
+```
+
+Then in your middleware later you can set it like this:
+
+```go
+user := httpie.GetContextValue[MyUserObj](ctx, MyUserCtxKey)
+if user != nil {
+  // Update the memory location for MyUserObj so its accessible in the logger context
+  *user = MyActualUserObj
+}else{
+  // If the logger is not set we would still want this middleware to function
+  ctx = ctx.WithValue(ctx, MyUserCtxKey, MyActualUserObj)
+}
+```
+
+Then in `OnResponse` your local context will be able to see the `user` specified by a downstream middleware.
+
+**Note:** This is clearly awkward and you should avoid it.
+
 
 # Helpers
 
@@ -89,7 +122,7 @@ type MyStruct struct {
 
 You can execute the validator by running:
 
-```
+```go
 err := httpie.Validate(MyStruct{password: "test"})
 ```
 

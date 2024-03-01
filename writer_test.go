@@ -27,6 +27,15 @@ func TestWriteErrHttpErr(t *testing.T) {
 	assert.JSONEq(t, `{"message":"bad request"}`, w.Body.String())
 }
 
+func TestWriteErrValidationErr(t *testing.T) {
+	t.Parallel()
+	w := httptest.NewRecorder()
+	WriteErr(w, NewErrHttpValidation(map[string]string{"name": "required"}))
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+	assert.JSONEq(t, `{"errors":{"name":"required"},"message":"validation failed"}`, w.Body.String())
+}
+
 func TestWriteErrOther(t *testing.T) {
 	t.Parallel()
 	w := httptest.NewRecorder()

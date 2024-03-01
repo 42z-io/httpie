@@ -54,6 +54,7 @@ var DefaultLoggingOpts = LoggingOpts{
 	OnResponse:  DefaultLogResponse,
 }
 
+// LoggingMiddleware logs the request and response of an http handler to a slog.Logger
 func LoggingMiddleware(slogger *slog.Logger, opts ...LoggingOpts) func(http.Handler) http.Handler {
 	var opt LoggingOpts
 	if len(opts) > 0 {

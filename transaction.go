@@ -12,6 +12,7 @@ type ctxKey int
 
 var TransactionCtxKey ctxKey = 0
 
+// TransactionMiddleware injects a transaction into the request context and handles the commit/rollback
 func TransactionalMiddleware(getTx func(ctx context.Context) (driver.Tx, error)) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

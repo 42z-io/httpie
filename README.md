@@ -34,7 +34,7 @@ func getTx(ctx context.Context) *sql.Tx {
 }
 ```
 
-**Note:** If a transaction is not present then your repository / service layer should either acquire one itself, or not use a transaction and rely on your normal `**DB.Query` style calls.
+**Note:** If a transaction is not present then your repository / service layer should either acquire one itself, or not use a transaction and rely on your normal `DB.Query` style calls.
 
 The transaction will only be created when the HTTP request is: PUT, POST, DELETE
 
@@ -48,7 +48,7 @@ The logging middleware will use slog to record requests and responses.
 
 You need to provide it with a `slog.Logger` and any configuration. The default logs a lot of common values.
 
-```
+```go
 middleware := httpie.LoggingMiddleware(slog.Default(), httpie.LoggingOpts{
   LogRequest: true,
   LogResponse: true,
@@ -68,10 +68,31 @@ WriteErr(w http.ResponseWriter, err error) error
 WriteOk(w http.ResponseWriter, data T) error
 WriteOkOrErr(w http.ResponseWriter, data T, err error)
 ReadJson(r *http.Request, data *T) error
-GetQueryParamIntDefault(r *http.Request, key string, defaultValue int)
-GetQueryParamListDefault(r *http.Request, key string, defaultValue []string)
-GetQueryParamDefault(r *http.Request, key string, defaultValue string)
+GetQueryParamIntDefault(r *http.Request, key string, defaultValue int) (int, error)
+GetQueryParamListDefault(r *http.Request, key string, defaultValue []string) ([]string, error)
+GetQueryParamDefault(r *http.Request, key string, defaultValue string) (string, error)
 ```
+
+# Validation
+
+There is a slightly modified version of `github.com/go-playground/validator/v10` that has a secure password validator (`securepassword`)
+
+You can use this validator as follows:
+
+```go
+type MyStruct struct {
+  password string `validate:"required,securepassword"`
+}
+```
+
+You can execute the validator by running:
+
+```
+err := httpie.Validate(MyStruct{password: "test"})
+```
+
+`err` will be an `ErrHttpValidation` if validation fails. See [Validation Error](#validation-errors)
+
 
 # Errors
 
@@ -79,21 +100,21 @@ There is a non standard error system in place that is useful for mapping common 
 
 These errors are below and will map to standard HTTP errors when using `WriteErr`. Any other `error` passed to `WriteErr` will trigger a 500 internal service error.
 
-```
-ErrNotFound = 404 not found
-ErrUnauthorized = 401 unauthorized
-ErrBadRequest = 400 bad request
-ErrForbidden = 403 forbidden
-ErrConflict = 409 conflict
-ErrInternal = 500 internal server error
-```
+| Error Name | Status Code | Message | Purpose |
+| ---------- | ----------- | ------- | ------- |
+| ErrBadRequest | 400 | Bad Request | Used to indicate the request was malformed |
+| ErrUnauthorized | 401 | Unauthorized | Used to indicate the request has missing or invalid authorization |
+| ErrForbidden | 403 | Forbidden | The user is authenticated but not authorized for the resource |
+| ErrNotFound | 404 | Not Found | The resource was not found |
+| ErrConflict | 409 | Conflict | The resource already exists |
+| ErrInternal | 500 | Internal Server Error | There was an unexepected error |
 
 These errors are not meant to be comprehensive, it is useful to have errors that may occur in the service layer (like not finding an object) be able to propagate with the correct http error codes.
 
 You can implement new error codes like this:
 
 ```go
-var ErrMyError = httpie.NewHttpError(status_code, "error_message")
+var ErrMyError = httpie.NewErrHttp(status_code, "error_message")
 ```
 
 The errors when rendered using `WriteErr` will be in JSON format:
@@ -101,6 +122,29 @@ The errors when rendered using `WriteErr` will be in JSON format:
 ```json
 {
   "message": "not found"
+}
+```
+
+## Validation Errors
+
+There is a special variant of `ErrHttp` called `ErrHttpValidation`. This includes some extra information for returning a `map[string]string` of errors.
+
+These errors are meant for an API which understands the failures.
+
+You can use it as follows:
+
+```go
+err := NewHttpErrValidation(map[string]string{"field":"error_code"})
+```
+
+When passed to `WriteErr` it will return a 400 bad request with the following JSON output:
+
+```json
+{
+  "message": "validation failed",
+  "errors": {
+    "field": "error_code"
+  }
 }
 ```
 
@@ -143,4 +187,62 @@ func MyMiddlewareHandler(w http.ResponseWriter, r *http.Request) {
     // OR httpie.WriteErr(ww, ErrInternal)
   }
 }
+```
+
+# Context
+
+The middleware in this package tends to inject things into the context. You often need to be able to pull things out of the context.
+
+## GetContextValue
+
+You can get a typed object out of the context as follows:
+
+```go
+type myKeyType int
+var uniqueCtxKey myKeyType = 0
+
+type MyStruct struct {
+  MyValue int
+}
+
+myStruct := MyStruct {
+  MyValue: 42,
+}
+
+// Assign to the context
+ctx := context.WithValue(context.Background(), uniqueCtxKey, &myStruct)
+
+// Get from the context
+ctx = httpie.GetContextValue[MyStruct](ctx, ctxKey)
+```
+
+The value will be `nil` if it did not exist in the context or if the type was incorrect.
+
+# Clock Service
+
+The clock service is a simple wrapper around `time.Now().UTC()`. It's purpose is to allow fine-grained mocking in your
+service layer by including the clock service as a dependency.
+
+You can make use of `ClockServiceMock` to mock time in your service layer during testing.
+
+To use the clock service:
+
+```go
+type MyService struct {
+  clockService IClockService
+}
+
+func (s *MyService) GetNow() time.Time {
+  return s.clockService.Now()
+}
+
+func NewMyService(clockService IClockService) *MyService {
+  return &MyService{
+    clockService,
+  }
+}
+
+cs := new(ClockService)
+myService := NewMyService(clockService)
+myService.GetNow()
 ```

@@ -5,7 +5,7 @@
 
 Opinionated middleware, and helper functions for HTTP based applications.
 
-Why httpie? So you can have your pie and eat it to...?
+Why httpie? So you can have your pie and eat it too...?
 
 ![Logo](logo.png)
 

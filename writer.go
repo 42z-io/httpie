@@ -12,10 +12,19 @@ func WriteErrJson(w http.ResponseWriter, status int, message string) error {
 	return json.NewEncoder(w).Encode(map[string]string{"message": message})
 }
 
+// Used for operations that resulted in a failure, returns a JSON error with the specified status code and validation errors
+func WriteErrValidationJson(w http.ResponseWriter, validationErr IErrHttpValidation) error {
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(validationErr.StatusCode())
+	return json.NewEncoder(w).Encode(map[string]any{"message": validationErr.Error(), "errors": validationErr.ValidationErrors()})
+}
+
 // Used for operations that resulted in a failure, returns a JSON error
 // Determines the status code from the error if possible, defaults to 500
 func WriteErr(w http.ResponseWriter, err error) error {
-	if httpErr, ok := err.(HttpError); ok {
+	if validationErr, ok := err.(IErrHttpValidation); ok {
+		return WriteErrValidationJson(w, validationErr)
+	} else if httpErr, ok := err.(IErrHttp); ok {
 		return WriteErrJson(w, httpErr.StatusCode(), httpErr.Error())
 	} else {
 		return WriteErrJson(w, http.StatusInternalServerError, "internal server error")

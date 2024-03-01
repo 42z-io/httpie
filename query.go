@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// Get a query parameter (string) from the request, use a default value if it does not exist
 func GetQueryParamDefault(r *http.Request, key string, defaultValue string) string {
 	ok, value := GetQueryParam(r, key)
 	if !ok {
@@ -14,6 +15,7 @@ func GetQueryParamDefault(r *http.Request, key string, defaultValue string) stri
 	return value
 }
 
+// Get a query parameter (string) from the request, return a boolean if it exists
 func GetQueryParam(r *http.Request, key string) (bool, string) {
 	queryValue := r.URL.Query().Get(key)
 	if queryValue == "" {
@@ -22,6 +24,7 @@ func GetQueryParam(r *http.Request, key string) (bool, string) {
 	return true, queryValue
 }
 
+// Get a query parameter (int) from the request, use a default value if it does not exist and an error if its invalid
 func GetQueryParamIntDefault(r *http.Request, key string, defaultValue int) (int, error) {
 	ok, value, err := GetQueryParamInt(r, key)
 	if err != nil {
@@ -33,6 +36,7 @@ func GetQueryParamIntDefault(r *http.Request, key string, defaultValue int) (int
 	return value, nil
 }
 
+// Get a query parameter (int) from the request, return a boolean if it exists, and an error if its invalid
 func GetQueryParamInt(r *http.Request, key string) (bool, int, error) {
 	queryValue := r.URL.Query().Get(key)
 	if queryValue == "" {
@@ -45,6 +49,7 @@ func GetQueryParamInt(r *http.Request, key string) (bool, int, error) {
 	return true, value, nil
 }
 
+// Get a query parameter ([]string) from the request, split the value by commas, use a default value if it does not exist
 func GetQueryParamListDefault(r *http.Request, key string, defaultValue []string) []string {
 	ok, value := GetQueryParamList(r, key)
 	if !ok {
@@ -53,6 +58,7 @@ func GetQueryParamListDefault(r *http.Request, key string, defaultValue []string
 	return value
 }
 
+// Get a query parameter ([]string) from the request, split the value by commas, return a boolean if it exists
 func GetQueryParamList(r *http.Request, key string) (bool, []string) {
 	queryValue := r.URL.Query().Get(key)
 	if queryValue == "" {

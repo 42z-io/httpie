@@ -2,6 +2,7 @@ package httpie
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -106,4 +107,35 @@ func TestLoggingCustomOpts(t *testing.T) {
 
 	assert.Equal(t, 201, w.Code)
 	assert.Len(t, writer.String(), 0)
+}
+
+var testTestCtxKey ctxKey = 42
+
+func TestLoggingSetupCtx(t *testing.T) {
+	t.Parallel()
+	writer := bytes.NewBufferString("")
+	slogger := slog.New(slog.NewJSONHandler(writer, nil))
+
+	middleware := LoggingMiddleware(slogger, LoggingOpts{
+		LogRequest:  false,
+		LogResponse: false,
+		OnRequest:   nil,
+		OnResponse:  nil,
+		SetupContext: func(ctx context.Context) context.Context {
+			return context.WithValue(ctx, testTestCtxKey, "world")
+		},
+	})
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		value := r.Context().Value(testTestCtxKey).(string)
+		w.WriteHeader(201)
+		w.Write([]byte(value))
+	})
+
+	r := httptest.NewRequest("PUT", "http://domain.com/path?query=hello", nil)
+	w := httptest.NewRecorder()
+	middleware(handler).ServeHTTP(w, r)
+
+	assert.Equal(t, 201, w.Code)
+	assert.Equal(t, "world", w.Body.String())
 }

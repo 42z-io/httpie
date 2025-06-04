@@ -1,10 +1,13 @@
+name: Code Coverage
+
+permissions: 
+  issues: write
+
 on:
   push:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
-
-name: Code Coverage
 
 jobs:
   test:

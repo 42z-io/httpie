@@ -1,5 +1,7 @@
 name: Build and Test
 
+permissions: {}
+
 on:
   push:
     branches: [ "master" ]
